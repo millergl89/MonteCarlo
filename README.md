@@ -7,15 +7,15 @@
 
 ## Synopsis
 
-    Creating Dice
+### Creating Dice
         To create a die, instantiate the Die class with a NumPy array of unique face values. Optionally, you can change the weight of a specific face.
 
     import numpy as np
     from die import Die
 
-# Create a die with 3 faces: 'A', 'B', 'C'
-faces = np.array(['A', 'B', 'C'])
-die = Die(faces)
+### Create a die with 3 faces: 'A', 'B', 'C'
+    faces = np.array(['A', 'B', 'C'])
+    die = Die(faces)
 
 
 # Optionally change the weight of face 'A'
