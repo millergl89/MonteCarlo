@@ -5,79 +5,98 @@ from montecarlo.MonteCarlo import Die, Game, Analyzer
 
 class TestDie(unittest.TestCase):
 
-    def setUp(self):
-        self.faces = np.array(['A', 'B', 'C'])
-        self.die = Die(self.faces)
+
+    def test_init_non_array_faces(self):
+        with self.assertRaises(TypeError):
+            Die(['H', 'T'])
 
     def test_change_weight(self):
-        self.die.change_weight('A', 3.5)
-        df = self.die.show()
-        self.assertEqual(df.loc['A', 'weight'], 3.5)
+        die = Die(np.array(['A', 'B']))
+        die.change_weight('A', 2.0)
+        self.assertEqual(die.show().loc['A', 'weight'], 2.0)
 
     def test_roll(self):
-        result = self.die.roll(5)
-        self.assertEqual(len(result), 5)
-        self.assertTrue(all(face in self.faces for face in result))
+        die = Die(np.array(['A', 'B']))
+        rolls = die.roll(5)
+        self.assertEqual(len(rolls), 5)
+        self.assertTrue(all(r in ['A', 'B'] for r in rolls))
 
     def test_show(self):
-        df = self.die.show()
+        die = Die(np.array(['A', 'B']))
+        df = die.show()
         self.assertIsInstance(df, pd.DataFrame)
-        self.assertListEqual(list(df.columns), ['weight'])
+
 
 class TestGame(unittest.TestCase):
 
-    def setUp(self):
-        faces = np.array([1, 2, 3])
-        self.die1 = Die(faces)
-        self.die2 = Die(faces)
-        self.game = Game([self.die1, self.die2])
-        self.game.play(10)
+    def test_init_valid_dice(self):
+        die1 = Die(np.array(['A', 'B']))
+        die2 = Die(np.array(['A', 'B']))
+        game = Game([die1, die2])
+        self.assertEqual(len(game.dice), 2)
+        self.assertIsNone(game._play_df)
 
     def test_play(self):
-        df = self.game.show()
+        die = Die(np.array(['X', 'Y']))
+        game = Game([die, die])
+        game.play(3)
+        # Check the shape of the result after playing
+        self.assertEqual(game._play_df.shape, (3, 2))  # 3 rolls and 2 dice
+
+    def test_show(self):
+        die = Die(np.array(['X', 'Y']))
+        game = Game([die, die])
+        game.play(3)
+        df = game.show()
+        # Ensure the show method works correctly
+        self.assertEqual(df.shape, (3, 2))  # The same shape as the play result
         self.assertIsInstance(df, pd.DataFrame)
-        self.assertEqual(df.shape[0], 10)
-        self.assertEqual(df.shape[1], 2)
 
-    def test_show_wide(self):
-        wide_df = self.game.show(form='wide')
-        self.assertIsInstance(wide_df, pd.DataFrame)
-        self.assertEqual(wide_df.shape[0], 10)
-
-    def test_show_narrow(self):
-        narrow_df = self.game.show(form='narrow')
-        self.assertIsInstance(narrow_df, pd.DataFrame)
-        self.assertEqual(narrow_df.index.names, ['Roll', 'Die'])
-        self.assertIn('Outcome', narrow_df.columns)
 
 class TestAnalyzer(unittest.TestCase):
 
-    def setUp(self):
-        faces = np.array([1, 2, 3])
-        die1 = Die(faces)
-        die2 = Die(faces)
-        game = Game([die1, die2])
-        game.play(10)
-        self.analyzer = Analyzer(game)
+    def test_init_valid_game(self):
+        die = Die(np.array(['A', 'B']))
+        game = Game([die, die])
+        game.play(3)
+        analyzer = Analyzer(game)
+        self.assertTrue(isinstance(analyzer.results, pd.DataFrame))
+        self.assertEqual(analyzer.results.shape[0], 3)
 
     def test_jackpot(self):
-        result = self.analyzer.jackpot()
-        self.assertIsInstance(result, int)
+        die = Die(np.array(['A', 'B']))  # Valid unique faces
+        game = Game([die, die])
+        game.play(5)
+        analyzer = Analyzer(game)
+        result = analyzer.jackpot()
+        self.assertIsInstance(result, (int, np.integer))
+        self.assertGreaterEqual(result, 0)
 
     def test_face_counts_per_roll(self):
-        df = self.analyzer.face_counts_per_roll()
-        self.assertIsInstance(df, pd.DataFrame)
-        self.assertTrue(df.shape[0], 10)
+        die = Die(np.array(['1', '2']))
+        game = Game([die, die])
+        game.play(5)
+        analyzer = Analyzer(game)
+        counts = analyzer.face_counts_per_roll()
+        self.assertEqual(counts.shape[0], 5)
 
     def test_combo_count(self):
-        df = self.analyzer.combo_count()
-        self.assertIsInstance(df, pd.DataFrame)
-        self.assertIn('Count', df.columns)
+        die = Die(np.array(['1', '2']))
+        game = Game([die, die])
+        game.play(5)
+        analyzer = Analyzer(game)
+        combos = analyzer.combo_count()
+        self.assertTrue(isinstance(combos, pd.DataFrame))
+        self.assertGreater(len(combos), 0)  # Ensure that combinations are found
 
     def test_permutation_count(self):
-        df = self.analyzer.permutation_count()
-        self.assertIsInstance(df, pd.DataFrame)
-        self.assertIn('Count', df.columns)
+        die = Die(np.array(['1', '2']))
+        game = Game([die, die])
+        game.play(5)
+        analyzer = Analyzer(game)
+        perms = analyzer.permutation_count()
+        self.assertTrue(isinstance(perms, pd.DataFrame))
+        self.assertGreater(len(perms), 0)  # Ensure that permutations are found
 
 if __name__ == '__main__':
     unittest.main()

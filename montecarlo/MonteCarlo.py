@@ -204,7 +204,7 @@ class Analyzer:
             int
                 Number of jackpot outcomes (all dice in a roll show the same face).
         """
-        return (self.results.nunique(axis=1) == 1).sum()
+        return int((self.results.nunique(axis=1) == 1).sum())
 
     def face_counts_per_roll(self):
         """
